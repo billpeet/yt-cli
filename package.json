@@ -2,10 +2,16 @@
   "name": "yt-cli",
   "version": "0.1.0",
   "description": "YouTrack CLI tool for AI agent and developer use",
+  "author": "billpeet",
+  "license": "MIT",
   "bin": {
     "yt": "bin/yt.js"
   },
   "main": "dist/index.js",
+  "files": [
+    "bin/",
+    "dist/"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
@@ -20,7 +26,17 @@
     "jetbrains",
     "issue-tracker"
   ],
-  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/billpeet/yt-cli.git"
+  },
+  "homepage": "https://github.com/billpeet/yt-cli#readme",
+  "bugs": {
+    "url": "https://github.com/billpeet/yt-cli/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "axios": "^1.7.0",
     "chalk": "^4.1.2",

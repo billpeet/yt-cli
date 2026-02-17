@@ -1,5 +1,5 @@
 {
-  "name": "yt-cli",
+  "name": "@billpeet/yt-cli",
   "version": "0.1.0",
   "description": "YouTrack CLI tool for AI agent and developer use",
   "author": "billpeet",

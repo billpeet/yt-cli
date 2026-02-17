@@ -5,7 +5,7 @@ A YouTrack CLI tool designed for AI agent use and developer workflows. Outputs J
 ## Installation
 
 ```bash
-npm install -g yt-cli
+npm install -g @billpeet/yt-cli
 ```
 
 Or run locally without installing:

@@ -18,7 +18,7 @@ const DEFAULT_ISSUE_FIELDS =
   'project(id,shortName,name),' +
   'reporter(login,name),' +
   'assignee(login,name),' +
-  'customFields(name,value(name,id))';
+  'customFields(name,$type,value(name,id,login))';
 
 const DEFAULT_COMMENT_FIELDS = 'id,text,author(login,name),created,updated';
 const DEFAULT_PROJECT_FIELDS = 'id,shortName,name';
@@ -120,9 +120,9 @@ export function createClient(config: Config): YouTrackClient {
         if (fields.description !== undefined) body.description = fields.description;
         if (fields.customFields && fields.customFields.length > 0) {
           body.customFields = fields.customFields.map((cf) => ({
+            $type: cf.$type ?? 'SingleEnumIssueCustomField',
             name: cf.name,
             value: typeof cf.value === 'string' ? { name: cf.value } : cf.value,
-            $type: 'SingleEnumIssueCustomField',
           }));
         }
         const { data } = await http.post<YouTrackIssue>(

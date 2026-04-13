@@ -39,6 +39,29 @@ function formatDate(ts: unknown): string {
   return new Date(ts).toISOString().replace('T', ' ').slice(0, 16) + ' UTC';
 }
 
+function stripMatchingQuotes(value: string): string {
+  if (value.length >= 2) {
+    const first = value[0];
+    const last = value[value.length - 1];
+    if ((first === '"' && last === '"') || (first === "'" && last === "'")) {
+      return value.slice(1, -1);
+    }
+  }
+  return value;
+}
+
+function looksLikeEntityId(value: string): boolean {
+  return /^\d+-\d+$/.test(value);
+}
+
+function serializeCustomFieldValue(fieldType: string | undefined, rawValue: string): YouTrackCustomFieldUpdate['value'] {
+  if (fieldType === 'SingleUserIssueCustomField') {
+    return looksLikeEntityId(rawValue) ? { id: rawValue } : { login: rawValue };
+  }
+
+  return looksLikeEntityId(rawValue) ? { id: rawValue } : { name: rawValue };
+}
+
 function printIssue(issue: YouTrackIssue): void {
   const id = issue.idReadable ?? issue.id ?? '?';
   console.log(`## ${id}: ${issue.summary ?? '(no summary)'}`);
@@ -243,22 +266,44 @@ export function registerIssue(program: Command): void {
       try { config = getConfig(); } catch (err) { die(err); }
       const client = createClient(config);
 
-      const customFields: YouTrackCustomFieldUpdate[] = (opts.field as string[]).map((f) => {
-        const eqIdx = f.indexOf('=');
-        if (eqIdx === -1) {
-          process.stderr.write(
-            JSON.stringify({ error: `Invalid --field format: "${f}". Expected "Name=Value".` }) + '\n'
-          );
-          process.exit(1);
-        }
-        return { name: f.substring(0, eqIdx), value: f.substring(eqIdx + 1) };
-      });
-
       try {
+        let customFields: YouTrackCustomFieldUpdate[] | undefined;
+        const requestedFields = opts.field as string[];
+
+        if (requestedFields.length > 0) {
+          const currentIssue = await client.getIssue(id, { fields: 'id,idReadable,customFields(name,$type)' });
+          customFields = requestedFields.map((f) => {
+            const eqIdx = f.indexOf('=');
+            if (eqIdx === -1) {
+              process.stderr.write(
+                JSON.stringify({ error: `Invalid --field format: "${f}". Expected "Name=Value".` }) + '\n'
+              );
+              process.exit(1);
+            }
+
+            const name = f.substring(0, eqIdx).trim();
+            const rawValue = stripMatchingQuotes(f.substring(eqIdx + 1).trim());
+            const existingField = currentIssue.customFields?.find((cf) => cf.name === name);
+
+            if (!existingField) {
+              process.stderr.write(
+                JSON.stringify({ error: `Issue ${id} does not contain custom field "${name}".` }) + '\n'
+              );
+              process.exit(1);
+            }
+
+            return {
+              $type: existingField.$type,
+              name,
+              value: serializeCustomFieldValue(existingField.$type, rawValue),
+            };
+          });
+        }
+
         const iss = await client.updateIssue(id, {
           summary: opts.summary,
           description: opts.description,
-          customFields: customFields.length > 0 ? customFields : undefined,
+          customFields,
         });
         if (opts.format === 'json') {
           console.log(opts.pretty ? JSON.stringify(iss, null, 2) : JSON.stringify(iss));

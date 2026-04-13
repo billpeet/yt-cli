@@ -13,10 +13,12 @@ export interface YouTrackUser {
 
 export interface YouTrackCustomFieldValue {
   id?: string;
+  login?: string;
   name?: string;
 }
 
 export interface YouTrackCustomField {
+  $type?: string;
   name: string;
   value: YouTrackCustomFieldValue | YouTrackCustomFieldValue[] | string | number | null;
 }
@@ -66,6 +68,7 @@ export interface YouTrackGetCurrentUserOptions {
 }
 
 export interface YouTrackCustomFieldUpdate {
+  $type?: string;
   name: string;
-  value: { name: string } | string | number;
+  value: YouTrackCustomFieldValue | string | number;
 }

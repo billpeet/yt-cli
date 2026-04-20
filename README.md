@@ -73,6 +73,7 @@ yt issue get FOO-123 --fields "id,idReadable,summary,description"
 ```bash
 yt issue create --project FOO --summary "Bug: login fails on Safari"
 yt issue create --project FOO --summary "Feature request" --description "Details here"
+yt issue create --project FOO --summary "Feature request" --agile "Continuous Improvement" --parent FOO-123
 ```
 
 Note: `--project` accepts the project short name (e.g. `FOO`) or the internal project ID.
@@ -83,9 +84,17 @@ Note: `--project` accepts the project short name (e.g. `FOO`) or the internal pr
 yt issue update FOO-123 --summary "Updated title"
 yt issue update FOO-123 --description "New description"
 yt issue update FOO-123 --field "State=In Progress" --field "Priority=High"
+yt issue update FOO-123 --agile "Continuous Improvement" --parent FOO-123
 ```
 
 `--field` can be repeated for multiple custom fields. Format: `FieldName=Value`.
+
+### `yt agile list`
+
+```bash
+yt agile list
+yt agile list --format json --pretty
+```
 
 ### `yt issue comments <id>`
 

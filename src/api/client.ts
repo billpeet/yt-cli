@@ -1,6 +1,8 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { Config } from '../config/store';
 import {
+  YouTrackAgile,
+  YouTrackCommandResult,
   YouTrackIssue,
   YouTrackComment,
   YouTrackProject,
@@ -11,6 +13,7 @@ import {
   YouTrackGetCommentsOptions,
   YouTrackGetCurrentUserOptions,
   YouTrackCustomFieldUpdate,
+  YouTrackListAgilesOptions,
 } from './types';
 
 const DEFAULT_ISSUE_FIELDS =
@@ -23,6 +26,7 @@ const DEFAULT_ISSUE_FIELDS =
 const DEFAULT_COMMENT_FIELDS = 'id,text,author(login,name),created,updated';
 const DEFAULT_PROJECT_FIELDS = 'id,shortName,name';
 const DEFAULT_USER_FIELDS = 'id,login,name,email';
+const DEFAULT_AGILE_FIELDS = 'id,name';
 
 export interface YouTrackClient {
   searchIssues(query: string, options?: YouTrackIssueSearchOptions): Promise<YouTrackIssue[]>;
@@ -35,7 +39,9 @@ export interface YouTrackClient {
   getComments(issueId: string, options?: YouTrackGetCommentsOptions): Promise<YouTrackComment[]>;
   addComment(issueId: string, text: string): Promise<YouTrackComment>;
   listProjects(options?: YouTrackListProjectsOptions): Promise<YouTrackProject[]>;
+  listAgiles(options?: YouTrackListAgilesOptions): Promise<YouTrackAgile[]>;
   getCurrentUser(options?: YouTrackGetCurrentUserOptions): Promise<YouTrackUser>;
+  executeIssueCommand(issueId: string, query: string): Promise<YouTrackCommandResult>;
 }
 
 function normalizeBaseUrl(baseUrl: string): string {
@@ -172,10 +178,34 @@ export function createClient(config: Config): YouTrackClient {
       }
     },
 
+    async listAgiles(options = {}) {
+      try {
+        const { data } = await http.get<YouTrackAgile[]>('agiles', {
+          params: { fields: options.fields ?? DEFAULT_AGILE_FIELDS },
+        });
+        return data;
+      } catch (err) {
+        handleAxiosError(err);
+      }
+    },
+
     async getCurrentUser(options = {}) {
       try {
         const { data } = await http.get<YouTrackUser>('users/me', {
           params: { fields: options.fields ?? DEFAULT_USER_FIELDS },
+        });
+        return data;
+      } catch (err) {
+        handleAxiosError(err);
+      }
+    },
+
+    async executeIssueCommand(issueId, query) {
+      try {
+        const issue = await this.getIssue(issueId, { fields: 'id,idReadable' });
+        const { data } = await http.post<YouTrackCommandResult>('commands', {
+          issues: [{ id: issue.id }],
+          query,
         });
         return data;
       } catch (err) {

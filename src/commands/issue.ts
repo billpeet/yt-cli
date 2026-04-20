@@ -1,7 +1,11 @@
 import { Command } from 'commander';
 import { getConfig } from '../config/store';
 import { createClient } from '../api/client';
-import { YouTrackCustomFieldUpdate, YouTrackIssue, YouTrackComment } from '../api/types';
+import {
+  YouTrackComment,
+  YouTrackCustomFieldUpdate,
+  YouTrackIssue,
+} from '../api/types';
 
 // ---------------------------------------------------------------------------
 // Text formatting helpers
@@ -52,6 +56,18 @@ function stripMatchingQuotes(value: string): string {
 
 function looksLikeEntityId(value: string): boolean {
   return /^\d+-\d+$/.test(value);
+}
+
+async function resolveAgileName(
+  client: ReturnType<typeof createClient>,
+  agileValue: string
+): Promise<string> {
+  const agiles = await client.listAgiles();
+  const agile = agiles.find((entry) => entry.id === agileValue || entry.name === agileValue);
+  if (!agile) {
+    throw new Error(`Agile board not found: ${agileValue}`);
+  }
+  return agile.name;
 }
 
 function serializeCustomFieldValue(fieldType: string | undefined, rawValue: string): YouTrackCustomFieldUpdate['value'] {
@@ -234,6 +250,8 @@ export function registerIssue(program: Command): void {
     .requiredOption('--project <project>', 'Project short name or ID')
     .requiredOption('--summary <summary>', 'Issue summary/title')
     .option('--description <description>', 'Issue description')
+    .option('--agile <agile>', 'Agile board name or ID')
+    .option('--parent <parent>', 'Parent issue ID for subtask/swimlane assignment')
     .option('--format <format>', 'Output format: text or json', 'text')
     .option('--pretty', 'Pretty-print JSON output (only with --format json)')
     .action(async (opts) => {
@@ -242,12 +260,23 @@ export function registerIssue(program: Command): void {
       const client = createClient(config);
       try {
         const iss = await client.createIssue(opts.project, opts.summary, opts.description);
+        if (opts.agile) {
+          const agileName = await resolveAgileName(client, opts.agile);
+          await client.executeIssueCommand(iss.idReadable ?? iss.id, `add Board ${agileName}`);
+        }
+        if (opts.parent) {
+          await client.getIssue(opts.parent, { fields: 'id,idReadable' });
+          await client.executeIssueCommand(iss.idReadable ?? iss.id, `subtask of ${opts.parent}`);
+        }
+        const updatedIssue = opts.agile || opts.parent
+          ? await client.getIssue(iss.idReadable ?? iss.id)
+          : iss;
         if (opts.format === 'json') {
-          console.log(opts.pretty ? JSON.stringify(iss, null, 2) : JSON.stringify(iss));
+          console.log(opts.pretty ? JSON.stringify(updatedIssue, null, 2) : JSON.stringify(updatedIssue));
         } else {
-          console.log(`Created ${iss.idReadable}`);
+          console.log(`Created ${updatedIssue.idReadable}`);
           console.log();
-          printIssue(iss);
+          printIssue(updatedIssue);
         }
       } catch (err) { die(err); }
     });
@@ -259,6 +288,8 @@ export function registerIssue(program: Command): void {
     .option('--summary <summary>', 'New summary/title')
     .option('--description <description>', 'New description')
     .option('--field <field>', 'Custom field in "Name=Value" format (repeatable)', collect, [])
+    .option('--agile <agile>', 'Agile board name or ID')
+    .option('--parent <parent>', 'Parent issue ID for subtask/swimlane assignment')
     .option('--format <format>', 'Output format: text or json', 'text')
     .option('--pretty', 'Pretty-print JSON output (only with --format json)')
     .action(async (id, opts) => {
@@ -305,12 +336,21 @@ export function registerIssue(program: Command): void {
           description: opts.description,
           customFields,
         });
+        if (opts.agile) {
+          const agileName = await resolveAgileName(client, opts.agile);
+          await client.executeIssueCommand(id, `add Board ${agileName}`);
+        }
+        if (opts.parent) {
+          await client.getIssue(opts.parent, { fields: 'id,idReadable' });
+          await client.executeIssueCommand(id, `subtask of ${opts.parent}`);
+        }
+        const updatedIssue = opts.agile || opts.parent ? await client.getIssue(id) : iss;
         if (opts.format === 'json') {
-          console.log(opts.pretty ? JSON.stringify(iss, null, 2) : JSON.stringify(iss));
+          console.log(opts.pretty ? JSON.stringify(updatedIssue, null, 2) : JSON.stringify(updatedIssue));
         } else {
-          console.log(`Updated ${iss.idReadable}`);
+          console.log(`Updated ${updatedIssue.idReadable}`);
           console.log();
-          printIssue(iss);
+          printIssue(updatedIssue);
         }
       } catch (err) { die(err); }
     });

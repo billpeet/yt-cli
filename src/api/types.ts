@@ -4,6 +4,11 @@ export interface YouTrackProject {
   name: string;
 }
 
+export interface YouTrackAgile {
+  id: string;
+  name: string;
+}
+
 export interface YouTrackUser {
   id: string;
   login: string;
@@ -67,8 +72,16 @@ export interface YouTrackGetCurrentUserOptions {
   fields?: string;
 }
 
+export interface YouTrackListAgilesOptions {
+  fields?: string;
+}
+
 export interface YouTrackCustomFieldUpdate {
   $type?: string;
   name: string;
   value: YouTrackCustomFieldValue | string | number;
+}
+
+export interface YouTrackCommandResult {
+  query?: string;
 }

@@ -73,16 +73,20 @@ yt issue get FOO-123 --fields "id,idReadable,summary,description"
 ```bash
 yt issue create --project FOO --summary "Bug: login fails on Safari"
 yt issue create --project FOO --summary "Feature request" --description "Details here"
+yt issue create --project FOO --summary "Feature request" --description "Line 1\n\nLine 2"
 yt issue create --project FOO --summary "Feature request" --agile "Continuous Improvement" --parent FOO-123
 ```
 
 Note: `--project` accepts the project short name (e.g. `FOO`) or the internal project ID.
+
+Multiline `--description` and `issue comment --text` values may be passed either with literal newlines supported by your shell, or with escaped newline sequences (`\n`). The CLI converts `\n` to real newlines before sending text to YouTrack.
 
 ### `yt issue update <id>`
 
 ```bash
 yt issue update FOO-123 --summary "Updated title"
 yt issue update FOO-123 --description "New description"
+yt issue update FOO-123 --description "Line 1\n\nLine 2"
 yt issue update FOO-123 --field "State=In Progress" --field "Priority=High"
 yt issue update FOO-123 --agile "Continuous Improvement" --parent FOO-123
 ```

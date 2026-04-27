@@ -54,6 +54,10 @@ function stripMatchingQuotes(value: string): string {
   return value;
 }
 
+function normalizeMultilineOption(value: string | undefined): string | undefined {
+  return value?.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\\r/g, '\r');
+}
+
 function looksLikeEntityId(value: string): boolean {
   return /^\d+-\d+$/.test(value);
 }
@@ -259,7 +263,7 @@ export function registerIssue(program: Command): void {
       try { config = getConfig(); } catch (err) { die(err); }
       const client = createClient(config);
       try {
-        const iss = await client.createIssue(opts.project, opts.summary, opts.description);
+        const iss = await client.createIssue(opts.project, opts.summary, normalizeMultilineOption(opts.description));
         if (opts.agile) {
           const agileName = await resolveAgileName(client, opts.agile);
           await client.executeIssueCommand(iss.idReadable ?? iss.id, `add Board ${agileName}`);
@@ -333,7 +337,7 @@ export function registerIssue(program: Command): void {
 
         const iss = await client.updateIssue(id, {
           summary: opts.summary,
-          description: opts.description,
+          description: normalizeMultilineOption(opts.description),
           customFields,
         });
         if (opts.agile) {
@@ -388,7 +392,7 @@ export function registerIssue(program: Command): void {
       try { config = getConfig(); } catch (err) { die(err); }
       const client = createClient(config);
       try {
-        const comment = await client.addComment(id, opts.text);
+        const comment = await client.addComment(id, normalizeMultilineOption(opts.text) ?? opts.text);
         if (opts.format === 'json') {
           console.log(opts.pretty ? JSON.stringify(comment, null, 2) : JSON.stringify(comment));
         } else {

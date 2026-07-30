@@ -4,26 +4,46 @@ A YouTrack CLI tool designed for AI agent use and developer workflows. Outputs J
 
 ## Installation
 
+Requires [Node.js](https://nodejs.org/) 18 or newer.
+
+### Install the CLI
+
 ```bash
 npm install -g @billpeet/yt-cli
 ```
 
-Or run locally without installing:
+Confirm that the executable is available:
 
 ```bash
+yt --help
+```
+
+To install from a clone of this repository instead:
+
+```bash
+npm install
 npm run build
-node bin/yt.js --help
+npm link
+yt --help
 ```
 
 ## Setup
 
-Authenticate against your YouTrack instance:
+1. In YouTrack, open your avatar menu, select **Profile**, then **Account Security**.
+2. Under **Tokens**, create a permanent token and copy it. Treat the token like a password.
+3. Authenticate the CLI against your YouTrack instance:
 
 ```bash
 yt setup --url https://yourcompany.youtrack.cloud --token perm:yourtoken
 ```
 
 This validates the connection by calling `/api/users/me`, then saves credentials to `~/.config/yt-cli/config.json`.
+
+Verify the setup:
+
+```bash
+yt user me --pretty
+```
 
 ## Environment Variables
 
@@ -35,6 +55,74 @@ Override or replace the config file at any time:
 | `YOUTRACK_TOKEN` | YouTrack permanent API token |
 
 Environment variables take priority over the config file.
+
+For macOS or Linux:
+
+```bash
+export YOUTRACK_BASE_URL="https://yourcompany.youtrack.cloud"
+export YOUTRACK_TOKEN="perm:yourtoken"
+```
+
+For PowerShell:
+
+```powershell
+$env:YOUTRACK_BASE_URL = "https://yourcompany.youtrack.cloud"
+$env:YOUTRACK_TOKEN = "perm:yourtoken"
+```
+
+Set these in your shell profile or secret manager if they need to persist. Do not commit tokens or the generated config file.
+
+## Install the Agent Skill
+
+This repository includes the `youtrack` agent skill at [`skills/youtrack`](skills/youtrack/). The skill teaches supported coding agents when and how to use the `yt` CLI. Install and configure the CLI first; the skill does not include the CLI or your YouTrack credentials.
+
+The recommended installer is the [skills.sh CLI](https://skills.sh/docs/cli), which can be run with `npx` without a separate global installation.
+
+### Install from GitHub
+
+Interactively choose the target agent and installation scope:
+
+```bash
+npx skills add billpeet/yt-cli --skill youtrack
+```
+
+Install globally for a specific agent:
+
+```bash
+# Codex
+npx skills add billpeet/yt-cli --skill youtrack --agent codex --global --yes
+
+# Claude Code
+npx skills add billpeet/yt-cli --skill youtrack --agent claude-code --global --yes
+```
+
+Omit `--global` to install only for the current project. Omit `--yes` to review the installer prompts. To inspect what the repository exposes before installing:
+
+```bash
+npx skills add billpeet/yt-cli --list
+```
+
+### Install from a local clone
+
+From the repository root:
+
+```bash
+npx skills add . --skill youtrack
+```
+
+For a non-interactive global Codex installation:
+
+```bash
+npx skills add . --skill youtrack --agent codex --global --yes
+```
+
+Restart or open a new agent session after installation so the agent discovers the skill. You can then ask it to perform tasks such as “find my unresolved YouTrack issues” or “create a YouTrack ticket.”
+
+To refresh an installed skill after this repository changes:
+
+```bash
+npx skills update youtrack
+```
 
 ## Commands
 
